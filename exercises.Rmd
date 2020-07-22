@@ -1,0 +1,132 @@
+---
+title: "Separate, unite, and strings"
+author:
+  - [TEAM NAME GOES HERE]
+output: 
+  html_document:
+    df_print: paged
+    highlight: textmate 
+    theme: readable
+    code_folding: hide
+    toc: true
+    toc_float: true
+    fig_width: 7
+    fig_height: 5
+---
+
+# Overview
+
+These exercises will help you practice applying `separate`, `unite`, and regular expressions. You will use a messy dataset with information about cardiovascular disease (CVD).
+
+## Pre-requisites 
+
+Before starting these exercises, you should have a good understanding of 
+
+1. The [Tidy your data](https://rstudio.cloud/learn/primers/4.1) Primer.
+
+1. Chapter 12.3 - 12.7 and Chapter 14 of [R for Data Science](https://r4ds.had.co.nz/tidy-data.html#pivoting)
+
+## Setup
+
+```{r, message = FALSE, warning = FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+library(magrittr)
+
+```
+
+## Data dictionary
+
+```{r}
+
+cvd_messy_descr <-
+  c("ID" = 'Participant identification',
+    "cvd_status" = "1: CVD event occurred; 0: censored",
+    "cvd_time" = "time until CVD event or censoring",
+    "sbp" = "Systolic blood pressure, mm Hg",
+    "dbp" = "Diastolic blood pressure, mm Hg",
+    "bp_meds" = "Using blood pressure medication",
+    "age_number" = "Age, years",
+    "drink" = "Alcohol use",
+    "smoke" = "Cigarette use",
+    "hba1c" = "Hemoglobin A1c",
+    "diabetes" = "Diabetes status",
+    "albuminuria" = "Albuminuria status",
+    "bp_midrange" = "SBP 130-139 and DBP <90 or DBP 80-89 and SBP <140",
+    "rec_bpmeds_acc_aha" = "BP medication initiation or intensification recommended by the 2017 ACC/AHA BP guidelines",
+    "rec_bpmeds_jnc7" = "BP medication initiation or intensification recommended by the JNC7 BP guidelines"
+)
+
+# the enframe function transforms a vector into a tibble,
+tibble::enframe(cvd_messy_descr) %>% 
+  gt::gt(rowname_col = "name") %>%
+  gt::tab_stubhead(label = 'Variable name') %>% 
+  gt::cols_label(value = 'Variable description') %>% 
+  gt::cols_align('left') %>% 
+  gt::tab_header(title = 'Description of messy cardiovascular disease data')
+
+```
+
+## Import
+
+```{r}
+
+cvd <- readr::read_rds('data/cvd.rds')
+cvd
+
+```
+
+# Problem 1 
+
+Select the variables from `cvd` that are factors, and then apply the `table` function to each variable, separately. Store your results in a list with names corresponding to the variable names. 
+
+```{r}
+
+readr::read_rds('solutions/01_solution.rds')
+
+```
+
+# Problem 2 
+
+Use `bind_rows` to stack the table results on top of each other in a `tibble`. Then, use the `tbl_string()` function to create a string that shows the number of `'Yes'` values and the percent of `'Yes'` values out of the values that are `'Yes'`, `'No'`, or `'Unknown'`. Select just two columns from the resulting data: a column showing variable name and the column showing N(%) values for a table.
+
+__Hints__: 
+
+- the `.id` argument of `bind_rows` will include an additional column in the resulting `tibble` that shows names of the original `list`. 
+
+- `tbl_string()` works just like `glue()`, but automatically rounds numbers for printing in tables. 
+
+```{r}
+
+readr::read_rds('solutions/02_solution.rds')
+
+```
+
+# Problem 3 
+
+Create a `list` with the following __names__ and objects: 
+
+- __Yes__: a subset of `cvd` comprising participants who were using medication to lower blood pressure. 
+
+- __No__: a subset of `cvd` comprising participants who were using medication to lower blood pressure. 
+
+Use the code you wrote in problem 1 and 2 inside of `map` to create a `tibble` similar to the one in problem 2, but with one column per subset in your initial `list`.
+
+__Hints__: I used a `map` inside of a `map` for this.
+
+```{r}
+
+readr::read_rds('solutions/03_solution.rds')
+
+```
+
+
+# Problem 4
+
+make a simple table to present your results, and then interpret them. Which group of participants is more likely to smoke? Drink? Test positive for diabetes? What may explain these results?
+
+```{r}
+
+readr::read_rds('solutions/04_solution.rds')
+
+```

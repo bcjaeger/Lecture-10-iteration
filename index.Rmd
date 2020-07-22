@@ -1,0 +1,448 @@
+---
+title: "Iteration"
+subtitle: "Introduction to purrr"
+author: "Byron C. Jaeger"
+date: "Last updated: `r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: "slides.css"
+    logo: img/intro_2R_hex.png
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+class: inverse, center, middle
+
+```{r, include = FALSE}
+
+library(tidyverse)
+library(gt)
+library(broom)
+library(tblStrings)
+library(glue)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 12,
+  fig.height = 5.5,
+  dpi = 72 * 5
+)
+
+
+```
+
+# A tedious task
+
+---
+
+## Multiple means
+
+Suppose I ask you to find the mean value of every numeric variable in the synthetic CVD dataset. 
+
+```{r}
+
+cvd <- read_rds('data/cvd.rds')
+
+mean_status <- mean(cvd$cvd_status, na.rm = TRUE)
+mean_time   <- mean(cvd$cvd_time, na.rm = TRUE)
+mean_sbp    <- mean(cvd$sbp, na.rm = TRUE)
+mean_dbp    <- mean(cvd$dbp, na.rm = TRUE)
+mean_age    <- mean(cvd$age_number, na.rm = TRUE)
+mean_hba1c  <- mean(cvd$hba1c, na.rm = TRUE)
+
+```
+
+What are the __good__ things about this approach?
+
+- Simple and clear
+
+- Easy to do
+
+- Easy to learn
+
+---
+
+## Multiple means
+
+Suppose I ask you to find the mean value of every numeric variable in the synthetic CVD dataset. 
+
+```{r}
+
+cvd <- read_rds('data/cvd.rds')
+
+mean_status <- mean(cvd$cvd_status, na.rm = TRUE)
+mean_time   <- mean(cvd$cvd_time, na.rm = TRUE)
+mean_sbp    <- mean(cvd$sbp, na.rm = TRUE)
+mean_dbp    <- mean(cvd$dbp, na.rm = TRUE)
+mean_age    <- mean(cvd$age_number, na.rm = TRUE)
+mean_hba1c  <- mean(cvd$hba1c, na.rm = TRUE)
+
+```
+
+What are the __bad__ things about this approach?
+
+- Repetition increases probability of making a mistake 
+
+- Hard to update and make changes
+
+- Does not scale well
+
+---
+
+## Classic iteration
+
+In the beginning, there was the `for` loop.
+
+- Based on some index, usually denoted as `i`.
+
+- Requires a set of pre-defined index values (i.e., `i` = 1, 2, and 3)
+
+```{r}
+
+for (i in 1:5){
+  
+  print(i)
+  
+}
+
+```
+
+---
+
+## Classic iteration
+
+- `for` loop index options are flexible. 
+
+- e.g., loop over a set of character values instead of a set of numbers
+
+```{r}
+
+for (i in names(cvd)){
+  
+  print(i)
+  
+}
+
+```
+
+---
+
+## Classic iteration
+
+- `for` loops can make the `mean` task much less tedious.
+
+- loop over all the names and use `if` to act on continuous variables.
+
+```{r}
+
+for (i in names(cvd)) {
+
+  if (is.numeric(cvd[[i]])) {
+    print(
+      tbl_string('mean of {i}: {mean(cvd[[i]], na.rm = TRUE)}')
+    )
+  }  
+  
+}
+
+```
+
+---
+
+## Classic iteration
+
+The hard thing about `for` loops: storing values
+
+```{r}
+
+# initialize empty vectors for results
+mean_values <- c()
+mean_names <- c()
+for (i in names(cvd)) {
+
+  if (is.numeric(cvd[[i]])) {
+    # append the new mean to the list
+    mean_values <- c(mean_values, mean(cvd[[i]], na.rm = TRUE))
+    mean_names <- c(mean_names, i)
+  }  
+  
+}
+
+names(mean_values) <- mean_names
+
+mean_values
+
+```
+
+---
+
+## Tidy iteration
+
+`purrr` is an R package in the tidyverse.
+
+- designed to abstract away some of the extraneous syntax in `for` loops. 
+
+- main function is `map`, which works like a for loop
+
+- works extremely well with `lists` and `dplyr` functions
+
+---
+
+## Tidy iteration
+
+```{r, eval = FALSE}
+
+cvd %>% #<<
+  select(where(is.numeric)) %>% 
+  map(.f = ~ mean(.x, na.rm = TRUE))
+
+```
+
+```{r, echo = FALSE}
+print(cvd, width = 60)
+```
+
+---
+
+## Tidy iteration
+
+```{r, eval = FALSE}
+
+cvd %>% 
+  select(where(is.numeric)) %>% #<<
+  map(.f = ~ mean(.x, na.rm = TRUE))
+
+```
+
+```{r, echo = FALSE}
+
+cvd %>% 
+  select(where(is.numeric)) %>% 
+  print(width = 60)
+```
+
+---
+
+## Tidy iteration
+
+```{r}
+
+cvd %>% 
+  select(where(is.numeric)) %>% 
+  map(.f = ~ mean(.x, na.rm = TRUE)) #<<
+
+```
+
+---
+
+## Tidy iteration
+
+`map` has variations that can return a specific type of vector, 
+
+- `map_dbl` returns a double vector
+
+```{r}
+
+cvd %>% 
+  select(where(is.numeric)) %>% 
+  map_dbl(.f = ~ mean(.x, na.rm = TRUE)) #<<
+
+```
+
+---
+
+## Tidy iteration
+
+`map` has variations that can return a specific type of vector, 
+
+- `map_chr` returns a character vector
+
+```{r}
+
+cvd %>% 
+  select(where(is.numeric)) %>% 
+  map_chr(.f = ~ mean(.x, na.rm = TRUE)) #<<
+
+```
+
+---
+
+## Tidy iteration
+
+`map` has variations that can return a specific type of vector, 
+
+- `map_df` binds results into a tibble.
+
+```{r}
+
+cvd %>% 
+  select(where(is.numeric)) %>% 
+  map_df(.f = ~ mean(.x, na.rm = TRUE)) #<<
+
+```
+---
+
+## Mapping example
+
+Let's say we are trying to guess the regression slope for the following problem. 
+
+```{r}
+df <- tibble(x = rnorm(250), y = 3 * x + 1 + rnorm(250, sd = 5))
+ggplot(df, aes(x = x, y = y)) + geom_point()
+
+```
+
+---
+
+## Mapping example
+
+We want to select a regression slope value that minimizes the sum of squared differences between predicted values (red line) and observed values (gray points).
+
+```{r}
+
+ggplot(df, aes(x = x, y = y)) +
+  geom_point(shape = 21, col = 'black', fill = 'grey') +
+  geom_smooth(method = 'lm', col = 'red', se = FALSE)
+
+
+```
+
+---
+
+## Mapping example
+
+So how about we try a whole bunch of different slope values for our line and see which one minimizes the sum of squared differences?
+
+```{r, echo = FALSE}
+
+ggplot(df, aes(x = x, y = y)) +
+  geom_point(shape = 21, col = 'black', fill = 'grey') +
+  geom_abline(intercept = 3, col = 'red', slope = 0) + 
+  geom_abline(intercept = 3, col = 'red', slope = 1) + 
+  geom_abline(intercept = 3, col = 'red', slope = 2) +
+  geom_abline(intercept = 3, col = 'red', slope = 3) +
+  geom_abline(intercept = 3, col = 'red', slope = 4) +
+  geom_abline(intercept = 3, col = 'red', slope = 0.5) + 
+  geom_abline(intercept = 3, col = 'red', slope = 1.5) + 
+  geom_abline(intercept = 3, col = 'red', slope = 2.5) +
+  geom_abline(intercept = 3, col = 'red', slope = 3.5) +
+  geom_abline(intercept = 3, col = 'red', slope = 4.5) 
+
+```
+
+---
+
+## Mapping example
+
+first we'll do some single cases
+
+```{r}
+
+estimated_intercept <- 3
+estimated_slope <- 1
+
+predictions <- estimated_intercept + estimated_slope * df$x
+
+# mean squared error
+sq_error <- (predictions - df$y)^2
+mse <- mean(sq_error)
+mse
+
+```
+
+---
+
+## Mapping example
+
+first we'll do some single cases
+
+```{r}
+
+estimated_intercept <- 3
+estimated_slope <- 1.5
+
+predictions <- estimated_intercept + estimated_slope * df$x
+
+# mean squared error
+sq_error <- (predictions - df$y)^2
+mse <- mean(sq_error)
+mse
+
+```
+
+---
+
+## Mapping example
+
+Now we `map`.
+
+```{r}
+
+slopes <- seq(1, 5, length.out = 1000)
+
+results <- map_dbl(
+  .x = slopes,
+  .f = ~ {
+    estimated_intercept <- 3
+    estimated_slope <- .x
+    
+    predictions <- estimated_intercept + estimated_slope * df$x
+    
+    # mean squared error
+    sq_error <- (predictions - df$y)^2
+    mse <- mean(sq_error)
+    mse
+  }
+)
+
+
+
+```
+
+---
+
+## Mapping example
+
+and then `ggplot`.
+
+
+```{r, echo = FALSE}
+
+library(ggforce)
+tibble(
+  slp_estm = slopes,
+  mse_vals = results
+) %>% 
+  ggplot(
+    aes(
+      x = slp_estm, 
+      y = mse_vals
+    )
+  ) + 
+  geom_point(shape = 21, fill = 'red', col = 'grey') + 
+  geom_mark_circle(
+    aes(
+      filter = mse_vals == min(mse_vals),
+      label = paste('Slope estimate =', round(slp_estm,1)),
+      description = paste('conditional on knowing the intercept')
+    ),
+  ) + 
+  labs(y = 'Mean squared error', x = 'Estimated slope')
+
+```
+
+---
+
+## Learning more
+
+To learn more, see
+
+- The excellent purrr [tutorials](https://jennybc.github.io/purrr-tutorial/)
+
+- The purrr [website](https://purrr.tidyverse.org/index.html)
+
+
